@@ -1,0 +1,119 @@
+import { createHmac, randomBytes, timingSafeEqual, createCipheriv, createDecipheriv } from "node:crypto";
+import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+
+export type GoogleWorkspaceAuth = {
+  admin: SupabaseClient;
+  user: User;
+};
+
+export async function requireWorkspaceUser(
+  request: Request,
+  workspaceId: string,
+): Promise<GoogleWorkspaceAuth | Response> {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const anonKey = process.env.SUPABASE_ANON_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+    return Response.json({ error: "Server authentication is not configured." }, { status: 503 });
+  }
+  if (!token || !/^[0-9a-f-]{36}$/i.test(workspaceId)) {
+    return Response.json({ error: "Authentication and a valid workspace are required." }, { status: 401 });
+  }
+
+  const userClient = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: userData, error: userError } = await userClient.auth.getUser();
+  if (userError || !userData.user) {
+    return Response.json({ error: "Your session is invalid or expired." }, { status: 401 });
+  }
+  const { data: membership, error: membershipError } = await userClient
+    .from("workspace_members")
+    .select("workspace_id")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+  if (membershipError || !membership) {
+    return Response.json({ error: "You do not have access to this workspace." }, { status: 403 });
+  }
+
+  return {
+    user: userData.user,
+    admin: createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    }),
+  };
+}
+
+function tokenKey(): Buffer {
+  const encoded = process.env.GOOGLE_TOKEN_ENCRYPTION_KEY;
+  if (!encoded) throw new Error("Google token encryption is not configured.");
+  const key = Buffer.from(encoded, "base64");
+  if (key.length !== 32) throw new Error("Google token encryption key must decode to 32 bytes.");
+  return key;
+}
+
+export function encryptRefreshToken(token: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", tokenKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(token, "utf8"), cipher.final()]);
+  return [iv, cipher.getAuthTag(), encrypted].map((part) => part.toString("base64url")).join(".");
+}
+
+export function decryptRefreshToken(value: string): string {
+  const [encodedIv, encodedTag, encodedData] = value.split(".");
+  if (!encodedIv || !encodedTag || !encodedData) throw new Error("Stored Google credentials are invalid.");
+  const decipher = createDecipheriv("aes-256-gcm", tokenKey(), Buffer.from(encodedIv, "base64url"));
+  decipher.setAuthTag(Buffer.from(encodedTag, "base64url"));
+  return Buffer.concat([
+    decipher.update(Buffer.from(encodedData, "base64url")),
+    decipher.final(),
+  ]).toString("utf8");
+}
+
+export type OAuthState = {
+  workspaceId: string;
+  userId: string;
+  nonce: string;
+  expiresAt: number;
+};
+
+function stateSecret(): string {
+  const secret = process.env.GOOGLE_OAUTH_STATE_SECRET;
+  if (!secret || secret.length < 32) throw new Error("Google OAuth state secret must be at least 32 characters.");
+  return secret;
+}
+
+export function createOAuthState(workspaceId: string, userId: string): string {
+  const payload = Buffer.from(JSON.stringify({
+    workspaceId,
+    userId,
+    nonce: randomBytes(16).toString("base64url"),
+    expiresAt: Date.now() + 10 * 60 * 1000,
+  } satisfies OAuthState)).toString("base64url");
+  const signature = createHmac("sha256", stateSecret()).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+export function verifyOAuthState(value: string): OAuthState | null {
+  const [payload, signature] = value.split(".");
+  if (!payload || !signature) return null;
+  const expected = createHmac("sha256", stateSecret()).update(payload).digest();
+  const received = Buffer.from(signature, "base64url");
+  if (received.length !== expected.length || !timingSafeEqual(received, expected)) return null;
+  try {
+    const state = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as OAuthState;
+    if (
+      typeof state.workspaceId !== "string" ||
+      typeof state.userId !== "string" ||
+      typeof state.nonce !== "string" ||
+      typeof state.expiresAt !== "number" ||
+      state.expiresAt < Date.now()
+    ) return null;
+    return state;
+  } catch {
+    return null;
+  }
+}
