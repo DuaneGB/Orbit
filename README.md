@@ -13,7 +13,7 @@ See [docs/AUDIT.md](docs/AUDIT.md) for the platform audit, the business rules, a
 | Part | Where | Notes |
 | --- | --- | --- |
 | Web app | `src/` (React + Vite) | Installable PWA; push notifications via `public/sw.js` |
-| API | `api/` (Vercel Functions, Node) | `api/_lib` holds shared server code and isn't routed |
+| API | `api/` (one Vercel Function, Node) | `vercel.json` rewrites `/api/*` to `api/router.ts`, which dispatches to `api/_routes/*` (keeps the deployment under Hobby's 12-function limit). `api/_lib` holds shared server code. Relative imports in `api/` need a `.js` extension. |
 | Database | Supabase Postgres, `supabase/migrations/` | Browser never talks to Supabase directly; the API uses the service role |
 
 API routes: `/api/workspace/{me,create,join,invites,devices,forget-device,data,sync,push,activity}`, `/api/vercel/projects`, `/api/google/{auth,callback,status,sync,disconnect}`.
