@@ -63,7 +63,7 @@ export async function requireDevice(request: Request, options: { role?: DeviceRo
   const row = await queryOne<DeviceRow>(
     "check this device's access",
     `select d.id, d.name, d.role, d.workspace_id, w.name as workspace_name, d.last_seen_at
-       from workspace_devices d join workspaces w on w.id = d.workspace_id
+       from orbit.workspace_devices d join orbit.workspaces w on w.id = d.workspace_id
       where d.token_hash = $1 and d.revoked_at is null`,
     [sha256(token)],
   );
@@ -75,7 +75,7 @@ export async function requireDevice(request: Request, options: { role?: DeviceRo
   // Record activity at most every five minutes to keep writes low.
   if (Date.now() - Date.parse(row.last_seen_at) > 5 * 60 * 1000) {
     try {
-      await rawQuery("update workspace_devices set last_seen_at = now() where id = $1", [row.id]);
+      await rawQuery("update orbit.workspace_devices set last_seen_at = now() where id = $1", [row.id]);
     } catch (error) {
       console.error("Could not record device activity.", error);
     }
@@ -90,7 +90,7 @@ export async function requireDevice(request: Request, options: { role?: DeviceRo
 export async function countActiveOwners(workspaceId: string): Promise<number> {
   const row = await queryOne<{ count: string }>(
     "check workspace owners",
-    "select count(*) as count from workspace_devices where workspace_id = $1 and role = 'owner' and revoked_at is null",
+    "select count(*) as count from orbit.workspace_devices where workspace_id = $1 and role = 'owner' and revoked_at is null",
     [workspaceId],
   );
   return Number(row?.count ?? 0);
@@ -101,7 +101,7 @@ export async function createInvite(workspaceId: string, deviceId: string): Promi
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   await query(
     "create an invite code",
-    `insert into workspace_invites (workspace_id, created_by_device_id, code_hash, expires_at, max_uses)
+    `insert into orbit.workspace_invites (workspace_id, created_by_device_id, code_hash, expires_at, max_uses)
      values ($1, $2, $3, $4, 1)`,
     [workspaceId, deviceId, sha256(code), expiresAt],
   );

@@ -9,7 +9,7 @@ export const POST = route(async (request) => {
   const workspaceId = session.workspace.id;
   const connection = await queryOne<{ encrypted_refresh_token: string }>(
     "load the Google Calendar connection",
-    "select encrypted_refresh_token from google_calendar_connections where workspace_id = $1",
+    "select encrypted_refresh_token from orbit.google_calendar_connections where workspace_id = $1",
     [workspaceId],
   );
 
@@ -25,7 +25,7 @@ export const POST = route(async (request) => {
     }
   }
 
-  await query("remove Google event mappings", "delete from google_calendar_mappings where workspace_id = $1", [workspaceId]);
-  await query("disconnect Google Calendar", "delete from google_calendar_connections where workspace_id = $1", [workspaceId]);
+  await query("remove Google event mappings", "delete from orbit.google_calendar_mappings where workspace_id = $1", [workspaceId]);
+  await query("disconnect Google Calendar", "delete from orbit.google_calendar_connections where workspace_id = $1", [workspaceId]);
   return json({ disconnected: true });
 });

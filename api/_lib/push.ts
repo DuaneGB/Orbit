@@ -35,13 +35,13 @@ export async function notifyWorkspace(workspaceId: string, actor: { id: string; 
 
   try {
     const [claim] = await rawQuery<{ claimed: boolean }>(
-      "select claim_workspace_push($1, $2) as claimed",
+      "select orbit.claim_workspace_push($1, $2) as claimed",
       [workspaceId, PUSH_WINDOW_SECONDS],
     );
     if (claim?.claimed !== true) return;
 
     const rows = await rawQuery<{ endpoint: string; subscription: unknown }>(
-      "select endpoint, subscription from push_subscriptions where workspace_id = $1 and device_id is distinct from $2",
+      "select endpoint, subscription from orbit.push_subscriptions where workspace_id = $1 and device_id is distinct from $2",
       [workspaceId, actor.id],
     );
 
@@ -57,7 +57,7 @@ export async function notifyWorkspace(workspaceId: string, actor: { id: string; 
           ? Number((sendError as { statusCode: unknown }).statusCode)
           : 0;
         if (status === 404 || status === 410) {
-          await rawQuery("delete from push_subscriptions where endpoint = $1", [row.endpoint]);
+          await rawQuery("delete from orbit.push_subscriptions where endpoint = $1", [row.endpoint]);
         } else {
           console.error("Push delivery failed.", sendError);
         }

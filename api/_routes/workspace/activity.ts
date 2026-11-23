@@ -18,7 +18,7 @@ export const GET = route(async (request) => {
   const rows = await query<ActivityRow>(
     "load recent activity",
     `select a.id, a.entity_type, a.label, a.action, a.created_at, a.device_id, d.name as device_name
-       from activity_events a left join workspace_devices d on d.id = a.device_id
+       from orbit.activity_events a left join orbit.workspace_devices d on d.id = a.device_id
       where a.workspace_id = $1
       order by a.id desc
       limit 40`,

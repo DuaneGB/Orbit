@@ -13,7 +13,7 @@ export const POST = route(async (request) => {
   let revision: number;
   try {
     const [row] = await rawQuery<{ revision: string }>(
-      "select apply_workspace_sync($1, $2, $3::jsonb, $4::jsonb) as revision",
+      "select orbit.apply_workspace_sync($1, $2, $3::jsonb, $4::jsonb) as revision",
       [session.workspace.id, session.device.id, jsonb(upserts), jsonb(deletes)],
     );
     revision = Number(row?.revision);

@@ -201,7 +201,7 @@ async function insertMapping(
   workspaceId: string, orbitId: string, googleId: string, etag: string | null, orbitAt: string, googleAt: string,
 ): Promise<void> {
   await rawQuery(
-    `insert into google_calendar_mappings
+    `insert into orbit.google_calendar_mappings
        (workspace_id, orbit_event_id, google_event_id, google_etag, synced_orbit_updated_at, synced_google_updated_at)
      values ($1, $2, $3, $4, $5, $6)`,
     [workspaceId, orbitId, googleId, etag, orbitAt, googleAt],
@@ -212,7 +212,7 @@ async function updateMapping(
   workspaceId: string, orbitId: string, etag: string | null, orbitAt: string, googleAt: string,
 ): Promise<void> {
   await rawQuery(
-    `update google_calendar_mappings
+    `update orbit.google_calendar_mappings
         set google_etag = $1, synced_orbit_updated_at = $2, synced_google_updated_at = $3
       where workspace_id = $4 and orbit_event_id = $5`,
     [etag, orbitAt, googleAt, workspaceId, orbitId],
@@ -233,7 +233,7 @@ export const POST = route(async (request) => {
   const user = { id: session.device.id };
   const connection = await queryOne<{ encrypted_refresh_token: string; calendar_id: string }>(
     "load the Google Calendar connection",
-    "select encrypted_refresh_token, calendar_id from google_calendar_connections where workspace_id = $1",
+    "select encrypted_refresh_token, calendar_id from orbit.google_calendar_connections where workspace_id = $1",
     [workspaceId],
   );
   if (!connection) throw new HttpError(409, "Connect Google Calendar before syncing.");
@@ -242,12 +242,12 @@ export const POST = route(async (request) => {
     const accessToken = await refreshAccessToken(decryptRefreshToken(connection.encrypted_refresh_token));
     const googleEvents = await listGoogleEvents(accessToken, connection.calendar_id);
     const localRows = await rawQuery<LocalEventRow>(
-      "select id, payload, updated_at from workspace_items where workspace_id = $1 and entity_type = 'calendar_event'",
+      "select id, payload, updated_at from orbit.workspace_items where workspace_id = $1 and entity_type = 'calendar_event'",
       [workspaceId],
     );
     const mappingRows = await rawQuery<MappingRow>(
       `select orbit_event_id, google_event_id, google_etag, synced_orbit_updated_at, synced_google_updated_at
-         from google_calendar_mappings where workspace_id = $1`,
+         from orbit.google_calendar_mappings where workspace_id = $1`,
       [workspaceId],
     );
 
@@ -276,7 +276,7 @@ export const POST = route(async (request) => {
           }
         }
         await rawQuery(
-          "delete from google_calendar_mappings where workspace_id = $1 and orbit_event_id = $2",
+          "delete from orbit.google_calendar_mappings where workspace_id = $1 and orbit_event_id = $2",
           [workspaceId, mapping.orbit_event_id],
         );
         report.removed += 1;
@@ -284,11 +284,11 @@ export const POST = route(async (request) => {
       }
       if (!remote || remote.status === "cancelled") {
         await rawQuery(
-          "delete from workspace_items where workspace_id = $1 and entity_type = 'calendar_event' and id = $2",
+          "delete from orbit.workspace_items where workspace_id = $1 and entity_type = 'calendar_event' and id = $2",
           [workspaceId, mapping.orbit_event_id],
         );
         await rawQuery(
-          "delete from google_calendar_mappings where workspace_id = $1 and orbit_event_id = $2",
+          "delete from orbit.google_calendar_mappings where workspace_id = $1 and orbit_event_id = $2",
           [workspaceId, mapping.orbit_event_id],
         );
         report.removed += 1;
@@ -304,7 +304,7 @@ export const POST = route(async (request) => {
         const updated = fromGoogleEvent(remote, localEvent.id.toString(), timeZone);
         if (!updated) continue;
         await rawQuery(
-          `update workspace_items set payload = $1::jsonb, updated_by_device_id = $2, updated_at = $3
+          `update orbit.workspace_items set payload = $1::jsonb, updated_by_device_id = $2, updated_at = $3
             where workspace_id = $4 and entity_type = 'calendar_event' and id = $5`,
           [jsonb(updated), user.id, now, workspaceId, mapping.orbit_event_id],
         );
@@ -349,7 +349,7 @@ export const POST = route(async (request) => {
         await insertMapping(workspaceId, existingLocal.id, remote.id, remote.etag ?? null, existingLocal.updated_at, remote.updated ?? now);
       } else {
         await rawQuery(
-          `insert into workspace_items (workspace_id, entity_type, id, project_id, payload, updated_by_device_id, updated_at)
+          `insert into orbit.workspace_items (workspace_id, entity_type, id, project_id, payload, updated_by_device_id, updated_at)
            values ($1, 'calendar_event', $2, null, $3::jsonb, $4, $5)`,
           [workspaceId, String(event.id), jsonb(event), user.id, now],
         );
@@ -359,7 +359,7 @@ export const POST = route(async (request) => {
       mappedGoogleIds.add(remote.id);
     }
 
-    await query("record the Google sync time", "update google_calendar_connections set last_synced_at = $1 where workspace_id = $2", [now, workspaceId]);
+    await query("record the Google sync time", "update orbit.google_calendar_connections set last_synced_at = $1 where workspace_id = $2", [now, workspaceId]);
     return json(report);
   } catch (syncError) {
     console.error("Google Calendar sync failed.", syncError);

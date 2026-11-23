@@ -10,7 +10,7 @@ export const POST = route(async (request) => {
 
   const open = await queryOne<{ count: string }>(
     "check open invites",
-    "select count(*) as count from workspace_invites where workspace_id = $1 and expires_at > now() and used_count < max_uses",
+    "select count(*) as count from orbit.workspace_invites where workspace_id = $1 and expires_at > now() and used_count < max_uses",
     [session.workspace.id],
   );
   if (Number(open?.count ?? 0) >= MAX_OPEN_INVITES) {

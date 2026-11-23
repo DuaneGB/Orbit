@@ -6,7 +6,7 @@ export const GET = route(async (request) => {
   const session = await requireDevice(request);
   const connection = await queryOne<{ connected_at: string; last_synced_at: string | null }>(
     "check Google Calendar status",
-    "select connected_at, last_synced_at from google_calendar_connections where workspace_id = $1",
+    "select connected_at, last_synced_at from orbit.google_calendar_connections where workspace_id = $1",
     [session.workspace.id],
   );
   return json({

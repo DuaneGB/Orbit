@@ -13,7 +13,7 @@ export const GET = route(async (request) => {
 
   const workspace = await queryOne<{ revision: string }>(
     "load the workspace",
-    "select revision from workspaces where id = $1",
+    "select revision from orbit.workspaces where id = $1",
     [session.workspace.id],
   );
   const revision = Number(workspace?.revision ?? 0);
@@ -22,7 +22,7 @@ export const GET = route(async (request) => {
   const items = await query(
     "load shared items",
     `select workspace_id, entity_type, id, project_id, payload, updated_by_device_id, updated_at
-       from workspace_items
+       from orbit.workspace_items
       where workspace_id = $1
       order by entity_type, id`,
     [session.workspace.id],

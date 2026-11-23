@@ -10,7 +10,7 @@ export const POST = route(async (request) => {
   if (!subscription) throw new HttpError(400, "That push subscription is not valid.");
   await query(
     "save the push subscription",
-    `insert into push_subscriptions (endpoint, workspace_id, device_id, subscription)
+    `insert into orbit.push_subscriptions (endpoint, workspace_id, device_id, subscription)
      values ($1, $2, $3, $4::jsonb)
      on conflict (endpoint) do update
        set workspace_id = excluded.workspace_id,
@@ -27,7 +27,7 @@ export const DELETE = route(async (request) => {
   if (typeof endpoint !== "string") throw new HttpError(400, "A push endpoint is required.");
   await query(
     "remove the push subscription",
-    "delete from push_subscriptions where endpoint = $1 and device_id = $2",
+    "delete from orbit.push_subscriptions where endpoint = $1 and device_id = $2",
     [endpoint, session.device.id],
   );
   return json({ enabled: false });

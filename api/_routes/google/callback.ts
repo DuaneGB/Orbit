@@ -44,7 +44,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     // The device that started the flow must still be an active owner.
     const [device] = await rawQuery(
-      "select id from workspace_devices where id = $1 and workspace_id = $2 and role = 'owner' and revoked_at is null",
+      "select id from orbit.workspace_devices where id = $1 and workspace_id = $2 and role = 'owner' and revoked_at is null",
       [state.deviceId, state.workspaceId],
     );
     if (!device) return redirect(request, "error");
@@ -69,7 +69,7 @@ export async function GET(request: Request): Promise<Response> {
     let refreshToken = tokens.refresh_token;
     if (!refreshToken) {
       const [existing] = await rawQuery<{ encrypted_refresh_token: string }>(
-        "select encrypted_refresh_token from google_calendar_connections where workspace_id = $1",
+        "select encrypted_refresh_token from orbit.google_calendar_connections where workspace_id = $1",
         [state.workspaceId],
       );
       if (existing?.encrypted_refresh_token) refreshToken = decryptRefreshToken(existing.encrypted_refresh_token);
@@ -77,7 +77,7 @@ export async function GET(request: Request): Promise<Response> {
     if (!refreshToken) throw new Error("Google did not provide a refresh token. Revoke Orbit access in Google and reconnect.");
 
     await rawQuery(
-      `insert into google_calendar_connections (workspace_id, connected_by_device_id, encrypted_refresh_token, calendar_id)
+      `insert into orbit.google_calendar_connections (workspace_id, connected_by_device_id, encrypted_refresh_token, calendar_id)
        values ($1, $2, $3, 'primary')
        on conflict (workspace_id) do update
          set connected_by_device_id = excluded.connected_by_device_id,

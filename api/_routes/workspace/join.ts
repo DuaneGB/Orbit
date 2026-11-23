@@ -12,7 +12,7 @@ export const POST = route(async (request) => {
   let joined: { workspace_id: string; device_id: string } | undefined;
   try {
     [joined] = await rawQuery<{ workspace_id: string; device_id: string }>(
-      "select workspace_id, device_id from redeem_workspace_invite($1, $2, $3)",
+      "select workspace_id, device_id from orbit.redeem_workspace_invite($1, $2, $3)",
       [sha256(code), deviceName, hash],
     );
   } catch (error) {
@@ -25,7 +25,7 @@ export const POST = route(async (request) => {
 
   const workspace = await queryOne<{ id: string; name: string }>(
     "load the workspace",
-    "select id, name from workspaces where id = $1",
+    "select id, name from orbit.workspaces where id = $1",
     [joined.workspace_id],
   );
   if (!workspace) throw new HttpError(500, "Could not load the workspace.");

@@ -9,7 +9,7 @@ export const GET = route(async (request) => {
   const session = await requireDevice(request);
   const rows = await query<DeviceRow>(
     "load devices",
-    `select id, name, role, created_at, last_seen_at from workspace_devices
+    `select id, name, role, created_at, last_seen_at from orbit.workspace_devices
       where workspace_id = $1 and revoked_at is null
       order by created_at`,
     [session.workspace.id],
@@ -40,14 +40,14 @@ export const DELETE = route(async (request) => {
 
   const revoked = await query(
     "revoke the device",
-    `update workspace_devices set revoked_at = now()
+    `update orbit.workspace_devices set revoked_at = now()
       where id = $1 and workspace_id = $2 and revoked_at is null
       returning id`,
     [deviceId, session.workspace.id],
   );
   if (revoked.length === 0) throw new HttpError(404, "That device is not connected to this workspace.");
   try {
-    await rawQuery("delete from push_subscriptions where device_id = $1", [deviceId]);
+    await rawQuery("delete from orbit.push_subscriptions where device_id = $1", [deviceId]);
   } catch (error) {
     console.error("Could not remove the revoked device's push subscriptions.", error);
   }
@@ -65,7 +65,7 @@ export const PATCH = route(async (request) => {
   }
   const updated = await query(
     "change the device's role",
-    `update workspace_devices set role = $1
+    `update orbit.workspace_devices set role = $1
       where id = $2 and workspace_id = $3 and revoked_at is null
       returning id`,
     [body.role, deviceId, session.workspace.id],

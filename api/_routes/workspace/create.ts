@@ -32,8 +32,8 @@ export const POST = route(async (request) => {
   const { token, hash } = newDeviceToken();
   const created = await queryOne<{ workspace_id: string; workspace_name: string; id: string; name: string; role: "owner" }>(
     "create the workspace",
-    `with w as (insert into workspaces (name) values ($1) returning id, name),
-          d as (insert into workspace_devices (workspace_id, name, role, token_hash)
+    `with w as (insert into orbit.workspaces (name) values ($1) returning id, name),
+          d as (insert into orbit.workspace_devices (workspace_id, name, role, token_hash)
                 select id, $2, 'owner', $3 from w returning id, name, role)
      select w.id as workspace_id, w.name as workspace_name, d.id, d.name, d.role from w, d`,
     [name, deviceName, hash],
@@ -47,7 +47,7 @@ export const POST = route(async (request) => {
     const items = dashboardToWorkspaceItems(normalizeDashboardData(body.initialData)).slice(0, MAX_ITEMS_PER_SYNC);
     if (items.length > 0) {
       try {
-        await rawQuery("select apply_workspace_sync($1, $2, $3::jsonb, '[]'::jsonb)", [workspace.id, device.id, jsonb(items)]);
+        await rawQuery("select orbit.apply_workspace_sync($1, $2, $3::jsonb, '[]'::jsonb)", [workspace.id, device.id, jsonb(items)]);
       } catch (error) {
         console.error("Could not import this browser's data into the new workspace.", error);
       }

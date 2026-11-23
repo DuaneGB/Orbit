@@ -18,9 +18,9 @@ function connection(): Sql {
 }
 
 async function applySchema(sql: Sql): Promise<void> {
-  const [table] = await sql.query("select to_regclass('orbit_schema') is not null as present");
+  const [table] = await sql.query("select to_regclass('orbit.schema_version') is not null as present");
   if (table?.present) {
-    const [current] = await sql.query("select coalesce(max(version), 0) as version from orbit_schema");
+    const [current] = await sql.query("select coalesce(max(version), 0) as version from orbit.schema_version");
     if (Number(current?.version) >= SCHEMA_VERSION) return;
   }
   // One transaction with an advisory lock, so two cold starts can't race.
