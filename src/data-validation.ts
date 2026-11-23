@@ -9,7 +9,7 @@ import type {
   ProjectSpace,
   ProjectSprint,
   Task,
-} from "./project-types";
+} from "./project-types.js";
 
 export function isEntityId(value: unknown): value is EntityId {
   return typeof value === "string" || typeof value === "number";

@@ -1,7 +1,7 @@
-import { check, db } from "../_lib/db";
-import { requireDevice } from "../_lib/device";
-import { decryptRefreshToken } from "../_lib/google";
-import { json, route } from "../_lib/http";
+import { check, db } from "../../_lib/db.js";
+import { requireDevice } from "../../_lib/device.js";
+import { decryptRefreshToken } from "../../_lib/google.js";
+import { json, route } from "../../_lib/http.js";
 
 /** Owner only. Revokes the Google token and forgets the event mappings; Orbit events stay. */
 export const POST = route(async (request) => {

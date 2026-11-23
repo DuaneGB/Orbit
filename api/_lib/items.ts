@@ -1,6 +1,6 @@
-import type { WorkspaceEntityType, WorkspaceItemDelete, WorkspaceItemDraft } from "../../src/data-sync";
-import { isWorkspaceItemDraft, WORKSPACE_ENTITY_TYPES } from "../../src/data-sync";
-import { HttpError } from "./http";
+import type { WorkspaceEntityType, WorkspaceItemDelete, WorkspaceItemDraft } from "../../src/data-sync.js";
+import { isWorkspaceItemDraft, WORKSPACE_ENTITY_TYPES } from "../../src/data-sync.js";
+import { HttpError } from "./http.js";
 
 export const MAX_ITEMS_PER_SYNC = 2000;
 const MAX_PAYLOAD_CHARS = 20_000;

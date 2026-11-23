@@ -1,4 +1,4 @@
-import type { DashboardData, EntityId, ProjectSpace } from "./project-types";
+import type { DashboardData, EntityId, ProjectSpace } from "./project-types.js";
 import {
   isCalendarEvent,
   isProject,
@@ -7,7 +7,7 @@ import {
   isProjectNote,
   isProjectSprint,
   isTask,
-} from "./data-validation";
+} from "./data-validation.js";
 
 export const WORKSPACE_ENTITY_TYPES = [
   "project",

@@ -1,8 +1,8 @@
-import { db } from "../_lib/db";
-import { requireDevice } from "../_lib/device";
-import { HttpError, json, readJson, route } from "../_lib/http";
-import { parseSyncBatch, summarizeChanges } from "../_lib/items";
-import { notifyWorkspace } from "../_lib/push";
+import { db } from "../../_lib/db.js";
+import { requireDevice } from "../../_lib/device.js";
+import { HttpError, json, readJson, route } from "../../_lib/http.js";
+import { parseSyncBatch, summarizeChanges } from "../../_lib/items.js";
+import { notifyWorkspace } from "../../_lib/push.js";
 
 /** Applies one device's changes in a single transaction and returns the new revision. */
 export const POST = route(async (request) => {

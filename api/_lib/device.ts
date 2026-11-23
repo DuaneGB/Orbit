@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
-import { check, db } from "./db";
-import { HttpError, readCookie } from "./http";
+import { check, db } from "./db.js";
+import { HttpError, readCookie } from "./http.js";
 
 export const DEVICE_COOKIE = "orbit_device";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 400; // browsers cap cookies at 400 days

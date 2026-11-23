@@ -1,10 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
-import { isDashboardData, normalizeDashboardData } from "../../src/data-validation";
-import { dashboardToWorkspaceItems } from "../../src/data-sync";
-import { check, db } from "../_lib/db";
-import { createInvite, deviceCookie, newDeviceToken } from "../_lib/device";
-import { cleanText, HttpError, json, readJson, route } from "../_lib/http";
-import { MAX_ITEMS_PER_SYNC } from "../_lib/items";
+import { isDashboardData, normalizeDashboardData } from "../../../src/data-validation.js";
+import { dashboardToWorkspaceItems } from "../../../src/data-sync.js";
+import { check, db } from "../../_lib/db.js";
+import { createInvite, deviceCookie, newDeviceToken } from "../../_lib/device.js";
+import { cleanText, HttpError, json, readJson, route } from "../../_lib/http.js";
+import { MAX_ITEMS_PER_SYNC } from "../../_lib/items.js";
 
 function setupKeyMatches(received: unknown, expected: string): boolean {
   if (typeof received !== "string") return false;

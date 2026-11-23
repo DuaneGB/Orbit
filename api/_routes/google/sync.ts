@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
-import type { CalendarEvent } from "../../src/project-types";
-import { isCalendarEvent } from "../../src/data-validation";
-import { db } from "../_lib/db";
-import { requireDevice } from "../_lib/device";
-import { decryptRefreshToken } from "../_lib/google";
-import { HttpError, json, readJson, route } from "../_lib/http";
+import type { CalendarEvent } from "../../../src/project-types.js";
+import { isCalendarEvent } from "../../../src/data-validation.js";
+import { db } from "../../_lib/db.js";
+import { requireDevice } from "../../_lib/device.js";
+import { decryptRefreshToken } from "../../_lib/google.js";
+import { HttpError, json, readJson, route } from "../../_lib/http.js";
 
 // Only events in this window sync, so a connected calendar doesn't pour years
 // of personal history into a shared workspace.

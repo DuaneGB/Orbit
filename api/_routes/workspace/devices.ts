@@ -1,6 +1,6 @@
-import { check, db } from "../_lib/db";
-import { countActiveOwners, requireDevice } from "../_lib/device";
-import { HttpError, json, readJson, route } from "../_lib/http";
+import { check, db } from "../../_lib/db.js";
+import { countActiveOwners, requireDevice } from "../../_lib/device.js";
+import { HttpError, json, readJson, route } from "../../_lib/http.js";
 
 type DeviceRow = { id: string; name: string; role: "owner" | "member"; created_at: string; last_seen_at: string };
 

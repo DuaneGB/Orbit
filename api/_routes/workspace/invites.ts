@@ -1,6 +1,6 @@
-import { check, db } from "../_lib/db";
-import { createInvite, requireDevice } from "../_lib/device";
-import { HttpError, json, route } from "../_lib/http";
+import { check, db } from "../../_lib/db.js";
+import { createInvite, requireDevice } from "../../_lib/device.js";
+import { HttpError, json, route } from "../../_lib/http.js";
 
 const MAX_OPEN_INVITES = 10;
 

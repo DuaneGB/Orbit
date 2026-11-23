@@ -1,6 +1,6 @@
-import { check, db } from "../_lib/db";
-import { requireDevice } from "../_lib/device";
-import { json, route } from "../_lib/http";
+import { check, db } from "../../_lib/db.js";
+import { requireDevice } from "../../_lib/device.js";
+import { json, route } from "../../_lib/http.js";
 
 export const GET = route(async (request) => {
   const session = await requireDevice(request);

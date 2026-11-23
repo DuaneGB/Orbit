@@ -1,6 +1,6 @@
-import { check, db } from "../_lib/db";
-import { requireDevice } from "../_lib/device";
-import { json, route } from "../_lib/http";
+import { check, db } from "../../_lib/db.js";
+import { requireDevice } from "../../_lib/device.js";
+import { json, route } from "../../_lib/http.js";
 
 /**
  * Returns every shared item plus the workspace revision.

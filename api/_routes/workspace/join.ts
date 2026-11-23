@@ -1,6 +1,6 @@
-import { check, db } from "../_lib/db";
-import { deviceCookie, newDeviceToken, normalizeInviteCode, sha256 } from "../_lib/device";
-import { cleanText, HttpError, json, readJson, route } from "../_lib/http";
+import { check, db } from "../../_lib/db.js";
+import { deviceCookie, newDeviceToken, normalizeInviteCode, sha256 } from "../../_lib/device.js";
+import { cleanText, HttpError, json, readJson, route } from "../../_lib/http.js";
 
 /** Redeems a one-time invite code and gives this device its own access key. */
 export const POST = route(async (request) => {

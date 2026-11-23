@@ -1,5 +1,5 @@
-import { requireDevice } from "../_lib/device";
-import { HttpError, json, route } from "../_lib/http";
+import { requireDevice } from "../../_lib/device.js";
+import { HttpError, json, route } from "../../_lib/http.js";
 
 type VercelDeployment = {
   id?: string;

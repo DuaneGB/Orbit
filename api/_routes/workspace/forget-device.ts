@@ -1,6 +1,6 @@
-import { check, db } from "../_lib/db";
-import { clearDeviceCookie, countActiveOwners, requireDevice } from "../_lib/device";
-import { HttpError, json, route } from "../_lib/http";
+import { check, db } from "../../_lib/db.js";
+import { clearDeviceCookie, countActiveOwners, requireDevice } from "../../_lib/device.js";
+import { HttpError, json, route } from "../../_lib/http.js";
 
 /** Disconnects the current device. The last owner can't leave while others remain. */
 export const POST = route(async (request) => {

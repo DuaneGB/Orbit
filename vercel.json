@@ -4,6 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/api/((?!router$).+)", "destination": "/api/router?route=$1" },
     { "source": "/((?!api/|assets/|sw\\.js|manifest\\.webmanifest|orbit-icon\\.svg).*)", "destination": "/index.html" }
   ],
   "headers": [

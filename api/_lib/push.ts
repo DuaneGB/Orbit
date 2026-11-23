@@ -1,5 +1,5 @@
 import * as webPush from "web-push";
-import { db } from "./db";
+import { db } from "./db.js";
 
 const PUSH_WINDOW_SECONDS = 120;
 

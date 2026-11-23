@@ -1,6 +1,6 @@
-import { db } from "../_lib/db";
-import { decryptRefreshToken, encryptRefreshToken, verifyOAuthState } from "../_lib/google";
-import { readCookie } from "../_lib/http";
+import { db } from "../../_lib/db.js";
+import { decryptRefreshToken, encryptRefreshToken, verifyOAuthState } from "../../_lib/google.js";
+import { readCookie } from "../../_lib/http.js";
 
 type GoogleTokenResponse = {
   refresh_token?: string;

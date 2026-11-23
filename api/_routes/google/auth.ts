@@ -1,6 +1,6 @@
-import { requireDevice } from "../_lib/device";
-import { createOAuthState } from "../_lib/google";
-import { HttpError, json, route } from "../_lib/http";
+import { requireDevice } from "../../_lib/device.js";
+import { createOAuthState } from "../../_lib/google.js";
+import { HttpError, json, route } from "../../_lib/http.js";
 
 /**
  * Starts Google Calendar authorization. Owner only: connecting a calendar

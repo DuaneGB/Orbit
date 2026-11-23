@@ -1,7 +1,7 @@
-import { check, db } from "../_lib/db";
-import { requireDevice } from "../_lib/device";
-import { HttpError, json, readJson, route } from "../_lib/http";
-import { validPushSubscription } from "../_lib/push";
+import { check, db } from "../../_lib/db.js";
+import { requireDevice } from "../../_lib/device.js";
+import { HttpError, json, readJson, route } from "../../_lib/http.js";
+import { validPushSubscription } from "../../_lib/push.js";
 
 /** Saves this device's browser push subscription. */
 export const POST = route(async (request) => {
