@@ -1,0 +1,17 @@
+{
+  "name": "Orbit — make good work happen",
+  "short_name": "Orbit",
+  "description": "A shared project and task workspace.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f5f2",
+  "theme_color": "#f6f5f2",
+  "icons": [
+    {
+      "src": "/orbit-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

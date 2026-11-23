@@ -1,0 +1,34 @@
+import { check, db } from "../_lib/db";
+import { deviceCookie, newDeviceToken, normalizeInviteCode, sha256 } from "../_lib/device";
+import { cleanText, HttpError, json, readJson, route } from "../_lib/http";
+
+/** Redeems a one-time invite code and gives this device its own access key. */
+export const POST = route(async (request) => {
+  const body = await readJson(request);
+  const code = normalizeInviteCode(body.inviteCode);
+  const deviceName = cleanText(body.deviceName, "Device name", 60);
+  const { token, hash } = newDeviceToken();
+
+  const { data, error } = await db().rpc("redeem_workspace_invite", {
+    p_code_hash: sha256(code),
+    p_device_name: deviceName,
+    p_token_hash: hash,
+  });
+  if (error) {
+    if (error.code === "P0001") throw new HttpError(400, "That invite code is invalid, used, or expired. Ask for a new one.");
+    console.error("Could not redeem invite.", error);
+    throw new HttpError(500, "Could not join the workspace.");
+  }
+  const joined = (Array.isArray(data) ? data[0] : data) as { workspace_id: string; device_id: string } | undefined;
+  if (!joined) throw new HttpError(500, "Could not join the workspace.");
+
+  const workspace = check(
+    await db().from("workspaces").select("id,name").eq("id", joined.workspace_id).single(),
+    "load the workspace",
+  ) as { id: string; name: string };
+
+  return json(
+    { workspace, device: { id: joined.device_id, name: deviceName, role: "member" } },
+    { status: 201, headers: { "Set-Cookie": deviceCookie(token) } },
+  );
+});
