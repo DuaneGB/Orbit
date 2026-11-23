@@ -1,4 +1,4 @@
-import { check, db } from "../../_lib/db.js";
+import { pgCode, queryOne, rawQuery } from "../../_lib/db.js";
 import { deviceCookie, newDeviceToken, normalizeInviteCode, sha256 } from "../../_lib/device.js";
 import { cleanText, HttpError, json, readJson, route } from "../../_lib/http.js";
 
@@ -9,23 +9,26 @@ export const POST = route(async (request) => {
   const deviceName = cleanText(body.deviceName, "Device name", 60);
   const { token, hash } = newDeviceToken();
 
-  const { data, error } = await db().rpc("redeem_workspace_invite", {
-    p_code_hash: sha256(code),
-    p_device_name: deviceName,
-    p_token_hash: hash,
-  });
-  if (error) {
-    if (error.code === "P0001") throw new HttpError(400, "That invite code is invalid, used, or expired. Ask for a new one.");
+  let joined: { workspace_id: string; device_id: string } | undefined;
+  try {
+    [joined] = await rawQuery<{ workspace_id: string; device_id: string }>(
+      "select workspace_id, device_id from redeem_workspace_invite($1, $2, $3)",
+      [sha256(code), deviceName, hash],
+    );
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    if (pgCode(error) === "P0001") throw new HttpError(400, "That invite code is invalid, used, or expired. Ask for a new one.");
     console.error("Could not redeem invite.", error);
     throw new HttpError(500, "Could not join the workspace.");
   }
-  const joined = (Array.isArray(data) ? data[0] : data) as { workspace_id: string; device_id: string } | undefined;
   if (!joined) throw new HttpError(500, "Could not join the workspace.");
 
-  const workspace = check(
-    await db().from("workspaces").select("id,name").eq("id", joined.workspace_id).single(),
+  const workspace = await queryOne<{ id: string; name: string }>(
     "load the workspace",
-  ) as { id: string; name: string };
+    "select id, name from workspaces where id = $1",
+    [joined.workspace_id],
+  );
+  if (!workspace) throw new HttpError(500, "Could not load the workspace.");
 
   return json(
     { workspace, device: { id: joined.device_id, name: deviceName, role: "member" } },

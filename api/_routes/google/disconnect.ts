@@ -1,4 +1,4 @@
-import { check, db } from "../../_lib/db.js";
+import { query, queryOne } from "../../_lib/db.js";
 import { requireDevice } from "../../_lib/device.js";
 import { decryptRefreshToken } from "../../_lib/google.js";
 import { json, route } from "../../_lib/http.js";
@@ -7,13 +7,11 @@ import { json, route } from "../../_lib/http.js";
 export const POST = route(async (request) => {
   const session = await requireDevice(request, { role: "owner" });
   const workspaceId = session.workspace.id;
-  const connection = check(
-    await db().from("google_calendar_connections")
-      .select("encrypted_refresh_token")
-      .eq("workspace_id", workspaceId)
-      .maybeSingle(),
+  const connection = await queryOne<{ encrypted_refresh_token: string }>(
     "load the Google Calendar connection",
-  ) as { encrypted_refresh_token: string } | null;
+    "select encrypted_refresh_token from google_calendar_connections where workspace_id = $1",
+    [workspaceId],
+  );
 
   if (connection?.encrypted_refresh_token) {
     try {
@@ -27,7 +25,7 @@ export const POST = route(async (request) => {
     }
   }
 
-  check(await db().from("google_calendar_mappings").delete().eq("workspace_id", workspaceId), "remove Google event mappings");
-  check(await db().from("google_calendar_connections").delete().eq("workspace_id", workspaceId), "disconnect Google Calendar");
+  await query("remove Google event mappings", "delete from google_calendar_mappings where workspace_id = $1", [workspaceId]);
+  await query("disconnect Google Calendar", "delete from google_calendar_connections where workspace_id = $1", [workspaceId]);
   return json({ disconnected: true });
 });

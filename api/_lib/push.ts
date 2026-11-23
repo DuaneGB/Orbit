@@ -1,5 +1,5 @@
 import * as webPush from "web-push";
-import { db } from "./db.js";
+import { rawQuery } from "./db.js";
 
 const PUSH_WINDOW_SECONDS = 120;
 
@@ -34,23 +34,21 @@ export async function notifyWorkspace(workspaceId: string, actor: { id: string; 
   if (!publicKey || !privateKey || !subject) return;
 
   try {
-    const claim = await db().rpc("claim_workspace_push", {
-      p_workspace_id: workspaceId,
-      p_window_seconds: PUSH_WINDOW_SECONDS,
-    });
-    if (claim.error || claim.data !== true) return;
+    const [claim] = await rawQuery<{ claimed: boolean }>(
+      "select claim_workspace_push($1, $2) as claimed",
+      [workspaceId, PUSH_WINDOW_SECONDS],
+    );
+    if (claim?.claimed !== true) return;
 
-    const { data: rows, error } = await db()
-      .from("push_subscriptions")
-      .select("endpoint,device_id,subscription")
-      .eq("workspace_id", workspaceId)
-      .neq("device_id", actor.id);
-    if (error) throw error;
+    const rows = await rawQuery<{ endpoint: string; subscription: unknown }>(
+      "select endpoint, subscription from push_subscriptions where workspace_id = $1 and device_id is distinct from $2",
+      [workspaceId, actor.id],
+    );
 
     webPush.setVapidDetails(subject, publicKey, privateKey);
     const payload = JSON.stringify({ title: `${actor.name} updated Orbit`, body: summary, url: "/" });
 
-    await Promise.all((rows ?? []).map(async (row) => {
+    await Promise.all(rows.map(async (row) => {
       if (!isPushSubscription(row.subscription)) return;
       try {
         await webPush.sendNotification(row.subscription, payload, { TTL: 60 * 60 });
@@ -59,7 +57,7 @@ export async function notifyWorkspace(workspaceId: string, actor: { id: string; 
           ? Number((sendError as { statusCode: unknown }).statusCode)
           : 0;
         if (status === 404 || status === 410) {
-          await db().from("push_subscriptions").delete().eq("endpoint", row.endpoint);
+          await rawQuery("delete from push_subscriptions where endpoint = $1", [row.endpoint]);
         } else {
           console.error("Push delivery failed.", sendError);
         }

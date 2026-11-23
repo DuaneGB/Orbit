@@ -15,7 +15,7 @@
     "test": "node --import ./tests/resolve-ts.mjs --test tests/"
   },
   "dependencies": {
-    "@supabase/supabase-js": "~2.119.2",
+    "@neondatabase/serverless": "1.2.0",
     "react": "~19.3.1",
     "react-dom": "~19.3.1",
     "web-push": "~4.0.0"

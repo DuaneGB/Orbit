@@ -1,4 +1,4 @@
-import { db } from "../../_lib/db.js";
+import { rawQuery } from "../../_lib/db.js";
 import { decryptRefreshToken, encryptRefreshToken, verifyOAuthState } from "../../_lib/google.js";
 import { readCookie } from "../../_lib/http.js";
 
@@ -43,14 +43,11 @@ export async function GET(request: Request): Promise<Response> {
 
   try {
     // The device that started the flow must still be an active owner.
-    const { data: device, error: deviceError } = await db().from("workspace_devices")
-      .select("id")
-      .eq("id", state.deviceId)
-      .eq("workspace_id", state.workspaceId)
-      .eq("role", "owner")
-      .is("revoked_at", null)
-      .maybeSingle();
-    if (deviceError || !device) return redirect(request, "error");
+    const [device] = await rawQuery(
+      "select id from workspace_devices where id = $1 and workspace_id = $2 and role = 'owner' and revoked_at is null",
+      [state.deviceId, state.workspaceId],
+    );
+    if (!device) return redirect(request, "error");
 
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -71,23 +68,24 @@ export async function GET(request: Request): Promise<Response> {
 
     let refreshToken = tokens.refresh_token;
     if (!refreshToken) {
-      const { data: existing, error: existingError } = await db()
-        .from("google_calendar_connections")
-        .select("encrypted_refresh_token")
-        .eq("workspace_id", state.workspaceId)
-        .maybeSingle();
-      if (existingError) throw existingError;
+      const [existing] = await rawQuery<{ encrypted_refresh_token: string }>(
+        "select encrypted_refresh_token from google_calendar_connections where workspace_id = $1",
+        [state.workspaceId],
+      );
       if (existing?.encrypted_refresh_token) refreshToken = decryptRefreshToken(existing.encrypted_refresh_token);
     }
     if (!refreshToken) throw new Error("Google did not provide a refresh token. Revoke Orbit access in Google and reconnect.");
 
-    const { error: saveError } = await db().from("google_calendar_connections").upsert({
-      workspace_id: state.workspaceId,
-      connected_by_device_id: state.deviceId,
-      encrypted_refresh_token: encryptRefreshToken(refreshToken),
-      calendar_id: "primary",
-    }, { onConflict: "workspace_id" });
-    if (saveError) throw saveError;
+    await rawQuery(
+      `insert into google_calendar_connections (workspace_id, connected_by_device_id, encrypted_refresh_token, calendar_id)
+       values ($1, $2, $3, 'primary')
+       on conflict (workspace_id) do update
+         set connected_by_device_id = excluded.connected_by_device_id,
+             encrypted_refresh_token = excluded.encrypted_refresh_token,
+             calendar_id = excluded.calendar_id,
+             connected_at = now()`,
+      [state.workspaceId, state.deviceId, encryptRefreshToken(refreshToken)],
+    );
     return redirect(request, "connected");
   } catch (error) {
     console.error("Google Calendar connection could not be saved.", error);

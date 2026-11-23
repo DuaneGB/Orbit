@@ -398,3 +398,21 @@ button.workspace-switcher:hover { background: #2a2b32; }
   .app-card-project { width: 100%; margin-left: 0; }
   .app-card-project select { width: 100%; max-width: none; }
 }
+
+/* Access screen (create / join workspace): centred card */
+.auth-shell { box-sizing: border-box; display: grid; min-height: 100vh; min-height: 100dvh; place-items: center; padding: 32px 16px; background: radial-gradient(circle at 15% 10%, #ece8fb 0, transparent 42%), radial-gradient(circle at 90% 95%, #f4e9e2 0, transparent 40%), #f6f5f2; }
+.auth-card { box-sizing: border-box; width: 100%; max-width: 440px; padding: 34px 32px 26px; border: 1px solid #ebe9e4; border-radius: 18px; background: #fff; box-shadow: 0 24px 60px -28px #2a245533, 0 2px 6px #25252d0d; }
+.auth-card * { box-sizing: border-box; }
+.auth-brand { width: fit-content; margin-bottom: 22px; padding: 0; color: var(--ink); font-size: 24px; }
+.auth-brand .brand-period { color: var(--accent); }
+.auth-card .modal-kicker { display: block; font-size: 10px; }
+.auth-card h1 { margin: 8px 0 8px; font: 800 27px/1.15 "Manrope", sans-serif; letter-spacing: -1px; }
+.auth-card > p { margin: 0; color: #77747f; font-size: 13px; line-height: 1.55; }
+.auth-card > .push-message-error { margin-top: 14px; padding: 9px 12px; border: 1px solid #f1d6d3; border-radius: 8px; background: #fdf4f3; font-size: 12px; }
+.auth-card .auth-mode-switch button { font-size: 12px; padding: 9px; cursor: pointer; }
+.auth-card .form-field { font-size: 12px; }
+.auth-card .form-field input { height: 42px; font-size: 13px; }
+.auth-card .checkbox-field { font-size: 12px; }
+.auth-card .auth-submit { height: 44px; font-size: 13px; }
+.auth-card .auth-retry { display: block; margin: 18px auto 0; font-size: 12px; cursor: pointer; }
+@media (max-width: 480px) { .auth-card { padding: 26px 20px 20px; border-radius: 14px; } .auth-card h1 { font-size: 23px; } }

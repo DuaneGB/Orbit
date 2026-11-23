@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { isDashboardData, normalizeDashboardData } from "../../../src/data-validation.js";
 import { dashboardToWorkspaceItems } from "../../../src/data-sync.js";
-import { check, db } from "../../_lib/db.js";
+import { jsonb, queryOne, rawQuery } from "../../_lib/db.js";
 import { createInvite, deviceCookie, newDeviceToken } from "../../_lib/device.js";
 import { cleanText, HttpError, json, readJson, route } from "../../_lib/http.js";
 import { MAX_ITEMS_PER_SYNC } from "../../_lib/items.js";
@@ -27,31 +27,30 @@ export const POST = route(async (request) => {
   const name = cleanText(body.name, "Workspace name", 80);
   const deviceName = cleanText(body.deviceName, "Device name", 60);
 
-  const workspace = check(
-    await db().from("workspaces").insert({ name }).select("id,name").single(),
-    "create the workspace",
-  ) as { id: string; name: string };
-
+  // Workspace and its first owner device are created in one statement, so a
+  // failure can't leave an ownerless workspace behind.
   const { token, hash } = newDeviceToken();
-  const device = check(
-    await db().from("workspace_devices")
-      .insert({ workspace_id: workspace.id, name: deviceName, role: "owner", token_hash: hash })
-      .select("id,name,role")
-      .single(),
-    "register this device",
-  ) as { id: string; name: string; role: "owner" };
+  const created = await queryOne<{ workspace_id: string; workspace_name: string; id: string; name: string; role: "owner" }>(
+    "create the workspace",
+    `with w as (insert into workspaces (name) values ($1) returning id, name),
+          d as (insert into workspace_devices (workspace_id, name, role, token_hash)
+                select id, $2, 'owner', $3 from w returning id, name, role)
+     select w.id as workspace_id, w.name as workspace_name, d.id, d.name, d.role from w, d`,
+    [name, deviceName, hash],
+  );
+  if (!created) throw new HttpError(500, "Could not create the workspace.");
+  const workspace = { id: created.workspace_id, name: created.workspace_name };
+  const device = { id: created.id, name: created.name, role: created.role };
 
   // Bring this browser's existing projects into the new workspace, if it has any.
   if (body.initialData !== undefined && isDashboardData(body.initialData)) {
     const items = dashboardToWorkspaceItems(normalizeDashboardData(body.initialData)).slice(0, MAX_ITEMS_PER_SYNC);
     if (items.length > 0) {
-      const { error } = await db().rpc("apply_workspace_sync", {
-        p_workspace_id: workspace.id,
-        p_device_id: device.id,
-        p_upserts: items,
-        p_deletes: [],
-      });
-      if (error) console.error("Could not import this browser's data into the new workspace.", error);
+      try {
+        await rawQuery("select apply_workspace_sync($1, $2, $3::jsonb, '[]'::jsonb)", [workspace.id, device.id, jsonb(items)]);
+      } catch (error) {
+        console.error("Could not import this browser's data into the new workspace.", error);
+      }
     }
   }
 

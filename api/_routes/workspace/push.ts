@@ -1,4 +1,4 @@
-import { check, db } from "../../_lib/db.js";
+import { jsonb, query } from "../../_lib/db.js";
 import { requireDevice } from "../../_lib/device.js";
 import { HttpError, json, readJson, route } from "../../_lib/http.js";
 import { validPushSubscription } from "../../_lib/push.js";
@@ -8,14 +8,15 @@ export const POST = route(async (request) => {
   const session = await requireDevice(request);
   const subscription = validPushSubscription((await readJson(request)).subscription);
   if (!subscription) throw new HttpError(400, "That push subscription is not valid.");
-  check(
-    await db().from("push_subscriptions").upsert({
-      endpoint: subscription.endpoint,
-      workspace_id: session.workspace.id,
-      device_id: session.device.id,
-      subscription,
-    }, { onConflict: "endpoint" }),
+  await query(
     "save the push subscription",
+    `insert into push_subscriptions (endpoint, workspace_id, device_id, subscription)
+     values ($1, $2, $3, $4::jsonb)
+     on conflict (endpoint) do update
+       set workspace_id = excluded.workspace_id,
+           device_id = excluded.device_id,
+           subscription = excluded.subscription`,
+    [subscription.endpoint, session.workspace.id, session.device.id, jsonb(subscription)],
   );
   return json({ enabled: true });
 });
@@ -24,9 +25,10 @@ export const DELETE = route(async (request) => {
   const session = await requireDevice(request);
   const { endpoint } = await readJson(request);
   if (typeof endpoint !== "string") throw new HttpError(400, "A push endpoint is required.");
-  check(
-    await db().from("push_subscriptions").delete().eq("endpoint", endpoint).eq("device_id", session.device.id),
+  await query(
     "remove the push subscription",
+    "delete from push_subscriptions where endpoint = $1 and device_id = $2",
+    [endpoint, session.device.id],
   );
   return json({ enabled: false });
 });
